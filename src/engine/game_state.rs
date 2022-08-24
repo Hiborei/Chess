@@ -1,5 +1,3 @@
-use std::sync::PoisonError;
-
 use super::Player;
 use crate::{
     board::{
@@ -11,7 +9,7 @@ use crate::{
 };
 
 use rand::Rng;
-use termion::{color, style};
+use termion::color;
 
 pub struct GameState {
     pub current_player: Player,
@@ -46,11 +44,9 @@ impl GameState {
 fn do_user_move(mut game_state: GameState) -> GameState {
     let king_in_check = check_if_king_in_check(&game_state.board, &game_state.current_player);
 
-    if king_in_check {
-        if check_checkmate(game_state.board.clone(), &game_state.current_player) {
-            game_state.checkmate = true;
-            return game_state;
-        }
+    if king_in_check && check_checkmate(game_state.board.clone(), &game_state.current_player) {
+        game_state.checkmate = true;
+        return game_state;
     }
 
     let selected_field_coordinates: BoardCoordinates = get_input("Select a field with your figure");
@@ -69,14 +65,21 @@ fn do_user_move(mut game_state: GameState) -> GameState {
         possible_fields,
         color::Fg(color::White)
     );
-    let mut selected_field_coordinates: BoardCoordinates =
-        get_input("Select a field to which you want to move your figure");
-    while !possible_fields.contains(&selected_field_coordinates) {
-        println!("This is not a valid move.");
-        selected_field_coordinates =
+
+    let selected_destination_field = loop {
+        let selected_field_coordinates: BoardCoordinates =
             get_input("Select a field to which you want to move your figure");
-    }
-    let selected_destination_field = game_state.board.at(&selected_field_coordinates);
+        if possible_fields.contains(&selected_field_coordinates) {
+            let selected_destination_field = game_state.board.at(&selected_field_coordinates);
+            if is_not_checked_after_move(
+                game_state.board.clone(),
+                &selected_field,
+                &selected_destination_field,
+            ) {
+                break selected_destination_field;
+            }
+        }
+    };
 
     game_state.board = move_piece(
         game_state.board,
@@ -86,35 +89,48 @@ fn do_user_move(mut game_state: GameState) -> GameState {
     game_state
 }
 
+fn is_not_checked_after_move(
+    board: Board,
+    selected_field: &Field,
+    selected_destination_field: &Field,
+) -> bool {
+    let board = move_piece(board, selected_field, selected_destination_field);
+    let player = selected_field.check_player().unwrap();
+    !check_if_king_in_check(&board, &player)
+}
+
 fn do_computer_move(mut game_state: GameState) -> GameState {
     let king_in_check = check_if_king_in_check(&game_state.board, &game_state.current_player);
 
-    if king_in_check {
-        if check_checkmate(game_state.board.clone(), &game_state.current_player) {
-            game_state.checkmate = true;
-            return game_state;
-        }
+    if king_in_check && check_checkmate(game_state.board.clone(), &game_state.current_player) {
+        game_state.checkmate = true;
+        return game_state;
     }
 
     let possible_fields = game_state
         .board
         .get_all_fields_by_player(&game_state.current_player);
 
-    let (selected_field, possible_destinations) = loop {
+    let (selected_field, destination_field) = loop {
         let selected_field =
             possible_fields[rand::thread_rng().gen_range(0..possible_fields.len())];
         let possible_destinations = get_movements(&selected_field, &game_state.board);
         if !possible_destinations.is_empty() {
-            break (selected_field, possible_destinations);
+            let destination =
+                possible_destinations[rand::thread_rng().gen_range(0..possible_destinations.len())];
+            let destination_field = game_state.board.at(&destination);
+            if is_not_checked_after_move(
+                game_state.board.clone(),
+                &selected_field,
+                &destination_field,
+            ) {
+                break (selected_field, destination_field);
+            }
         }
     };
-
-    let destination =
-        possible_destinations[rand::thread_rng().gen_range(0..possible_destinations.len())];
-    let destination_field = game_state.board.at(&destination);
     game_state.board = move_piece(game_state.board, &selected_field, &destination_field);
 
-    return game_state;
+    game_state
 }
 
 fn check_if_king_in_check(board: &Board, current_player: &Player) -> bool {
@@ -124,8 +140,7 @@ fn check_if_king_in_check(board: &Board, current_player: &Player) -> bool {
         if get_movements(&field, board)
             .into_iter()
             .filter_map(|coordinates| board.at(&coordinates).piece)
-            .find(|chesspiece| chesspiece.piece_type == ChessPieceType::King)
-            .is_some()
+            .any(|chesspiece| chesspiece.piece_type == ChessPieceType::King)
         {
             return true;
         }

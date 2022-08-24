@@ -1,18 +1,34 @@
+use std::str::FromStr;
+
+//use crate::board::layout::BoardCoordinates;
+
 pub mod board_layout;
 
 pub fn get_input<T>(message: &str) -> T
 where
-    T: TryFrom<String>,
+    T: FromStr,
 {
-    println!("{}", message);
-    let mut line = String::new();
-    std::io::stdin().read_line(&mut line).unwrap();
-    let mut res = T::try_from(line);
-    while res.is_err() {
+    let input = loop {
+        println!("{}", message);
         let mut line = String::new();
-        println!("Invalid, try again. {message}");
         std::io::stdin().read_line(&mut line).unwrap();
-        res = T::try_from(line);
-    }
-    res.ok().unwrap()
+        if let Ok(input) = line.parse() {
+            break input;
+        } else {
+            println!("Invalid, try again. {message}");
+        }
+    };
+    input
 }
+
+/*
+enum GeneralInput {
+    Command(CommandInput),
+    Coordinates(BoardCoordinates),
+}
+
+enum CommandInput {
+    Exit,
+    Score,
+}
+*/

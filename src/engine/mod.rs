@@ -1,5 +1,4 @@
-use std::fmt::{self, Display};
-
+use std::fmt;
 pub mod game_state;
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Player {
@@ -19,6 +18,9 @@ impl Player {
 
 impl fmt::Display for Player {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+        match self {
+            Player::User => write!(f, "You"),
+            Player::Opponent => write!(f, "Opponent"),
+        }
     }
 }

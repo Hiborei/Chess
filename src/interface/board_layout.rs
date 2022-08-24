@@ -10,7 +10,7 @@ use crate::{
 
 extern crate termion;
 
-use termion::{color, style};
+use termion::color;
 
 pub trait DrawInTerminal {
     fn draw(&self);
@@ -18,10 +18,10 @@ pub trait DrawInTerminal {
 
 impl DrawInTerminal for Board {
     fn draw(&self) {
-        println!("");
+        println!();
         print!("  {}A|B|C|D|E|F|G|H|", color::Fg(color::White));
         for x in 0..8 {
-            println!("");
+            println!();
 
             print!("{}|", x + 1);
 
@@ -31,9 +31,11 @@ impl DrawInTerminal for Board {
                 print!("{}|", color::Fg(color::White));
                 io::stdout().flush().unwrap();
             }
+            print!("{}{}", color::Fg(color::White), x + 1);
         }
-
-        println!("");
+        println!();
+        print!("  {}A|B|C|D|E|F|G|H|", color::Fg(color::White));
+        println!();
     }
 }
 

@@ -20,19 +20,11 @@ impl Field {
         self.piece = Some(piece)
     }
 
-    pub fn is_occupied(&self) -> bool {
-        self.piece.is_some()
-    }
-
     pub fn remove_piece(&mut self) {
         self.piece = None;
     }
 
     pub fn check_player(&self) -> Option<Player> {
-        if let Some(piece) = self.piece {
-            Some(piece.player)
-        } else {
-            None
-        }
+        self.piece.map(|piece| piece.player)
     }
 }

@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use super::{
     field::Field,
@@ -58,6 +58,26 @@ impl fmt::Display for ChessPieceType {
     }
 }
 
+impl FromStr for ChessPieceType {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        print!("Otrzymany string: {}.", s.get(..1).unwrap());
+        if !s.is_empty() {
+            return Err("Invalid length".to_string());
+        }
+
+        return match s.get(..1).unwrap() {
+            "P" => Ok(ChessPieceType::Pawn),
+            "B" => Ok(ChessPieceType::Bishop),
+            "N" => Ok(ChessPieceType::Knight),
+            "R" => Ok(ChessPieceType::Rook),
+            "Q" => Ok(ChessPieceType::Queen),
+            "K" => Ok(ChessPieceType::King),
+            _ => Err("Invalid chess piece".to_string()),
+        };
+    }
+}
+
 fn pawn_moves(board: &Board, current_field: &Field) -> Vec<BoardCoordinates> {
     let mut coordinates_vec = vec![];
     let current_player = current_field.check_player().unwrap();
@@ -96,76 +116,60 @@ fn bishop_moves(board: &Board, current_field: &Field) -> Vec<BoardCoordinates> {
     let own_coordinates = current_field.coordinates;
     let mut temp_coordinates = own_coordinates;
 
-    loop {
-        if let Some(coordinates) = temp_coordinates.up().and_then(BoardCoordinates::left) {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.up().and_then(BoardCoordinates::left) {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+
+        temp_coordinates = coordinates;
     }
 
     temp_coordinates = own_coordinates;
-    loop {
-        if let Some(coordinates) = temp_coordinates.up().and_then(BoardCoordinates::right) {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.up().and_then(BoardCoordinates::right) {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+        temp_coordinates = coordinates;
     }
 
     temp_coordinates = own_coordinates;
-    loop {
-        if let Some(coordinates) = temp_coordinates.down().and_then(BoardCoordinates::left) {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.down().and_then(BoardCoordinates::left) {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+        temp_coordinates = coordinates;
     }
 
     temp_coordinates = own_coordinates;
-    loop {
-        if let Some(coordinates) = temp_coordinates.down().and_then(BoardCoordinates::right) {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.down().and_then(BoardCoordinates::right) {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+        temp_coordinates = coordinates;
     }
 
     coordinates_vec
@@ -245,76 +249,60 @@ fn rook_moves(board: &Board, current_field: &Field) -> Vec<BoardCoordinates> {
 
     let mut temp_coordinates = own_coordinates;
 
-    loop {
-        if let Some(coordinates) = temp_coordinates.up() {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.up() {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+
+        temp_coordinates = coordinates;
     }
 
     temp_coordinates = own_coordinates;
-    loop {
-        if let Some(coordinates) = temp_coordinates.down() {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.down() {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+        temp_coordinates = coordinates;
     }
 
     temp_coordinates = own_coordinates;
-    loop {
-        if let Some(coordinates) = temp_coordinates.left() {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.left() {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+        temp_coordinates = coordinates;
     }
 
     temp_coordinates = own_coordinates;
-    loop {
-        if let Some(coordinates) = temp_coordinates.right() {
-            let field = board.at(&coordinates);
-            match field.check_player() {
-                Some(player) if player == current_player => break,
-                Some(_) => {
-                    coordinates_vec.push(coordinates);
-                    break;
-                }
-                None => coordinates_vec.push(coordinates),
+    while let Some(coordinates) = temp_coordinates.right() {
+        let field = board.at(&coordinates);
+        match field.check_player() {
+            Some(player) if player == current_player => break,
+            Some(_) => {
+                coordinates_vec.push(coordinates);
+                break;
             }
-            temp_coordinates = coordinates;
-        } else {
-            break;
+            None => coordinates_vec.push(coordinates),
         }
+        temp_coordinates = coordinates;
     }
 
     coordinates_vec
@@ -384,4 +372,16 @@ fn king_moves(board: &Board, current_field: &Field) -> Vec<BoardCoordinates> {
     }
 
     coordinates_vec
+}
+impl ChessPiece {
+    pub(crate) fn can_change(&self, coordinates: BoardCoordinates) -> bool {
+        if self.piece_type == ChessPieceType::Pawn {
+            match self.player {
+                Player::User => coordinates.up().is_none(),
+                Player::Opponent => coordinates.down().is_none(),
+            }
+        } else {
+            false
+        }
+    }
 }

@@ -7,11 +7,9 @@ mod engine;
 mod interface;
 use std::io::{self, Write};
 
-use board::layout::Board;
 use engine::game_state::GameState;
 use interface::board_layout::DrawInTerminal;
 
-use crate::board::chesspiece::ChessPiece;
 fn main() {
     game_engine()
 }
@@ -19,14 +17,14 @@ fn main() {
 fn game_engine() {
     let mut game_state = GameState::start();
     loop {
-        std::process::Command::new("clear").status();
+        let _ = std::process::Command::new("clear").status();
         game_state.board.draw();
 
         io::stdout().flush().unwrap();
         game_state = game_state.do_move();
         game_state = game_state.switch_player();
         if game_state.checkmate {
-            println!("Congratulations! {} has won!", game_state.current_player);
+            println!("Checkmate! {} won!", game_state.current_player);
             break;
         }
     }

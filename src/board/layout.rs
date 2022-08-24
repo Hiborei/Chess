@@ -1,6 +1,11 @@
-use crate::engine::Player;
+use std::str::FromStr;
 
-use super::{chesspiece::ChessPiece, field::Field};
+use crate::{engine::Player, interface};
+
+use super::{
+    chesspiece::{ChessPiece, ChessPieceType},
+    field::Field,
+};
 
 #[derive(Debug, Clone)]
 pub struct Board(pub(crate) [Field; 64]);
@@ -155,13 +160,6 @@ impl Board {
             .collect()
     }
 
-    pub fn get_all_fields_by_player_mut(&mut self, player: &Player) -> Vec<&mut Field> {
-        self.0
-            .iter_mut()
-            .filter(|field| field.check_player().contains(player))
-            .collect()
-    }
-
     pub(crate) fn remove_piece(mut self, coordinates: BoardCoordinates) -> Board {
         self.at_mut(&coordinates).remove_piece();
         self
@@ -170,8 +168,13 @@ impl Board {
     pub(crate) fn add_replace_piece(
         mut self,
         coordinates: BoardCoordinates,
-        piece: super::chesspiece::ChessPiece,
+        mut piece: super::chesspiece::ChessPiece,
     ) -> Board {
+        if piece.can_change(coordinates) {
+            let piece_type: ChessPieceType =
+                interface::get_input::<ChessPieceType>("Choose a piece to replace the pawn: ");
+            piece.piece_type = piece_type
+        }
         self.at_mut(&coordinates).add_replace_piece(piece);
         self
     }
@@ -248,9 +251,9 @@ impl BoardCoordinates {
     }
 }
 
-impl TryFrom<String> for BoardCoordinates {
-    type Error = String;
-    fn try_from(s: String) -> Result<Self, Self::Error> {
+impl FromStr for BoardCoordinates {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() < 2 {
             return Err("Inputted String for Board Coordinates is too short!".to_owned());
         }
@@ -264,7 +267,7 @@ impl TryFrom<String> for BoardCoordinates {
             "F" => 5,
             "G" => 6,
             "H" => 7,
-            _ => return Err(format!("Invalid letter for Board Coordinates: {}", letter).to_owned()),
+            _ => return Err(format!("Invalid letter for Board Coordinates: {}", letter)),
         };
         let digit = s.get(1..2).unwrap();
         let x = digit
