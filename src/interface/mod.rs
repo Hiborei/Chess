@@ -32,3 +32,16 @@ enum CommandInput {
     Score,
 }
 */
+
+#[test]
+fn test_from_strings() {
+    use crate::board::chesspiece::ChessPieceType;
+    use crate::board::layout::BoardCoordinates;
+    let coordinates: BoardCoordinates = FromStr::from_str("A1").unwrap();
+    assert_eq!(
+        coordinates,
+        BoardCoordinates::from_coordinates(0, 0).unwrap()
+    );
+    let piece_type: ChessPieceType = FromStr::from_str("K").unwrap();
+    assert_eq!(piece_type, ChessPieceType::King);
+}

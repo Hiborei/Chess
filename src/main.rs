@@ -34,7 +34,8 @@ fn game_engine() {
 
 #[test]
 fn board_placement_test() {
-    use board::layout::BoardCoordinates;
+    use board::chesspiece::ChessPiece;
+    use board::layout::{Board, BoardCoordinates};
     let mut board = Board::default();
     let pawn_move_coordinates = BoardCoordinates::from_coordinates(1, 1).unwrap();
     let bishop_move_coordinates = BoardCoordinates::from_coordinates(1, 2).unwrap();
