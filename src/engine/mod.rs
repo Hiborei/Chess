@@ -1,6 +1,6 @@
 use std::fmt;
 pub mod game_state;
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Player {
     User,
     Opponent,

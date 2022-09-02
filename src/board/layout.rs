@@ -180,7 +180,7 @@ impl Board {
     }
 }
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct BoardCoordinates {
     x: u32,
     y: u32,

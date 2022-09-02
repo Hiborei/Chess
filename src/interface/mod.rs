@@ -8,7 +8,7 @@ pub fn get_input<T>(message: &str) -> T
 where
     T: FromStr,
 {
-    let input = loop {
+    loop {
         println!("{}", message);
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
@@ -17,8 +17,7 @@ where
         } else {
             println!("Invalid, try again. {message}");
         }
-    };
-    input
+    }
 }
 
 /*
