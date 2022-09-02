@@ -61,20 +61,15 @@ impl fmt::Display for ChessPieceType {
 impl FromStr for ChessPieceType {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        print!("Otrzymany string: {}.", s.get(..1).unwrap());
-        if !s.is_empty() {
-            return Err("Invalid length".to_string());
-        }
-
-        return match s.get(..1).unwrap() {
-            "P" => Ok(ChessPieceType::Pawn),
-            "B" => Ok(ChessPieceType::Bishop),
-            "N" => Ok(ChessPieceType::Knight),
-            "R" => Ok(ChessPieceType::Rook),
-            "Q" => Ok(ChessPieceType::Queen),
-            "K" => Ok(ChessPieceType::King),
+        match s.get(..1) {
+            Some("P") => Ok(ChessPieceType::Pawn),
+            Some("B") => Ok(ChessPieceType::Bishop),
+            Some("N") => Ok(ChessPieceType::Knight),
+            Some("R") => Ok(ChessPieceType::Rook),
+            Some("Q") => Ok(ChessPieceType::Queen),
+            Some("K") => Ok(ChessPieceType::King),
             _ => Err("Invalid chess piece".to_string()),
-        };
+        }
     }
 }
 
