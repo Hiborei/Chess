@@ -5,11 +5,10 @@ use crate::{
         field::Field,
         layout::{Board, BoardCoordinates},
     },
-    interface::get_input,
+    interface::{get_input, CommandInput, GeneralInput},
 };
 
 use rand::Rng;
-use termion::color;
 
 pub struct GameState {
     pub current_player: Player,
@@ -49,44 +48,67 @@ fn do_user_move(mut game_state: GameState) -> GameState {
         return game_state;
     }
 
-    let selected_field_coordinates: BoardCoordinates = get_input("Select a field with your figure");
-    let mut selected_field = game_state.board.at(&selected_field_coordinates);
-    while selected_field.check_player() != Some(game_state.current_player) {
-        println!("This field doesn't have your figure.");
-        let selected_field_coordinates: BoardCoordinates =
-            get_input("Select a field with your figure");
-        selected_field = game_state.board.at(&selected_field_coordinates);
-    }
-
-    let possible_fields = get_movements(&selected_field, &game_state.board);
-    println!(
-        "{}[debug] {:?} {}",
-        color::Fg(color::Green),
-        possible_fields,
-        color::Fg(color::White)
-    );
-
-    let selected_destination_field = loop {
-        let selected_field_coordinates: BoardCoordinates =
-            get_input("Select a field to which you want to move your figure");
-        if possible_fields.contains(&selected_field_coordinates) {
-            let selected_destination_field = game_state.board.at(&selected_field_coordinates);
-            if is_not_checked_after_move(
-                game_state.board.clone(),
-                &selected_field,
-                &selected_destination_field,
-            ) {
-                break selected_destination_field;
-            }
-        }
-    };
-
+    let (selected_field, selected_destination_field) = choose_fields(&game_state);
     game_state.board = move_piece(
         game_state.board,
         &selected_field,
         &selected_destination_field,
     );
     game_state
+}
+
+fn choose_fields(game_state: &GameState) -> (Field, Field) {
+    let mut selected_field: Option<Field> = None;
+    let mut selected_destination_field: Option<Field> = None;
+    let mut possible_fields: Vec<BoardCoordinates> = vec![];
+    loop {
+        match (selected_field, selected_destination_field) {
+            (None, None) => {
+                let selected_field_coordinates: BoardCoordinates =
+                    get_input("Select a field with your figure");
+                let select_field = game_state.board.at(&selected_field_coordinates);
+                if select_field.check_player() != Some(game_state.current_player) {
+                    println!("This field doesn't have your figure.");
+                } else {
+                    possible_fields = get_movements(&select_field, &game_state.board);
+                    if possible_fields.is_empty() {
+                        println!("This figure has no possible moves!");
+                    } else {
+                        selected_field = Some(select_field);
+                    }
+                }
+            }
+            (Some(select_field), None) => {
+                let input: GeneralInput =
+                    get_input("Select a field to which you want to move your figure");
+                if let GeneralInput::Command(CommandInput::Back) = input {
+                    selected_field = None;
+                    continue;
+                }
+                if let GeneralInput::Coordinates(coordinates) = input {
+                    if possible_fields.contains(&coordinates) {
+                        let destination_field = game_state.board.at(&coordinates);
+                        if is_not_checked_after_move(
+                            game_state.board.clone(),
+                            &select_field,
+                            &destination_field,
+                        ) {
+                            selected_destination_field = Some(destination_field);
+                        } else {
+                            println!("Invalid move, your King will be in check!")
+                        }
+                    }
+                }
+            }
+            (Some(select_field), Some(destination_field)) => {
+                break (select_field, destination_field)
+            }
+            _ => {
+                // This should never happen
+                (selected_field, selected_destination_field) = (None, None);
+            }
+        }
+    }
 }
 
 fn is_not_checked_after_move(

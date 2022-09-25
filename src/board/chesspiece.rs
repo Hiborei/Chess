@@ -68,7 +68,7 @@ impl FromStr for ChessPieceType {
             Some("R") => Ok(ChessPieceType::Rook),
             Some("Q") => Ok(ChessPieceType::Queen),
             Some("K") => Ok(ChessPieceType::King),
-            _ => Err("Invalid chess piece".to_string()),
+            _ => Err("Invalid chess piece".to_owned()),
         }
     }
 }
