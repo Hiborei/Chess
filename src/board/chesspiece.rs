@@ -6,7 +6,7 @@ use super::{
 };
 use crate::engine::Player;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChessPiece {
     pub piece_type: ChessPieceType,
     pub player: Player,

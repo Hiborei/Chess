@@ -7,7 +7,7 @@ use super::{
     field::Field,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Board(pub(crate) [Field; 64]);
 
 impl Board {

@@ -2,7 +2,7 @@ use crate::engine::Player;
 
 use super::{chesspiece::ChessPiece, layout::BoardCoordinates};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Field {
     pub piece: Option<ChessPiece>,
     pub coordinates: BoardCoordinates,

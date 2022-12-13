@@ -5,6 +5,7 @@ use crate::{
         field::Field,
         layout::{Board, BoardCoordinates},
     },
+    common::{check_checkmate, check_if_king_in_check, is_not_checked_after_move, move_piece},
     interface::{get_input, CommandInput, GeneralInput},
 };
 
@@ -25,10 +26,10 @@ impl GameState {
         }
     }
 
-    pub fn do_move(self) -> Self {
+    pub fn do_move(self, ai_engine: &mut impl crate::ai_engine::AI) -> Self {
         match self.current_player {
             Player::User => do_user_move(self),
-            Player::Opponent => do_computer_move(self),
+            Player::Opponent => do_ai_move(self, ai_engine),
         }
     }
 
@@ -54,6 +55,18 @@ fn do_user_move(mut game_state: GameState) -> GameState {
         &selected_field,
         &selected_destination_field,
     );
+    game_state
+}
+
+fn do_ai_move(mut game_state: GameState, ai_engine: &mut impl crate::ai_engine::AI) -> GameState {
+    let king_in_check = check_if_king_in_check(&game_state.board, &game_state.current_player);
+
+    if king_in_check && check_checkmate(game_state.board.clone(), &game_state.current_player) {
+        game_state.checkmate = true;
+        return game_state;
+    }
+
+    game_state.board = ai_engine.make_move(game_state.board);
     game_state
 }
 
@@ -111,16 +124,6 @@ fn choose_fields(game_state: &GameState) -> (Field, Field) {
     }
 }
 
-fn is_not_checked_after_move(
-    board: Board,
-    selected_field: &Field,
-    selected_destination_field: &Field,
-) -> bool {
-    let board = move_piece(board, selected_field, selected_destination_field);
-    let player = selected_field.check_player().unwrap();
-    !check_if_king_in_check(&board, &player)
-}
-
 fn do_computer_move(mut game_state: GameState) -> GameState {
     let king_in_check = check_if_king_in_check(&game_state.board, &game_state.current_player);
 
@@ -153,39 +156,4 @@ fn do_computer_move(mut game_state: GameState) -> GameState {
     game_state.board = move_piece(game_state.board, &selected_field, &destination_field);
 
     game_state
-}
-
-fn check_if_king_in_check(board: &Board, current_player: &Player) -> bool {
-    let fields = board.get_all_fields_by_player(&current_player.switch());
-
-    for field in fields {
-        if get_movements(&field, board)
-            .into_iter()
-            .filter_map(|coordinates| board.at(&coordinates).piece)
-            .any(|chesspiece| chesspiece.piece_type == ChessPieceType::King)
-        {
-            return true;
-        }
-    }
-    false
-}
-
-fn move_piece(mut board: Board, selected: &Field, destination: &Field) -> Board {
-    let piece = selected.piece.unwrap();
-    board = board.remove_piece(selected.coordinates);
-    board = board.add_replace_piece(destination.coordinates, piece);
-    board
-}
-
-fn check_checkmate(board: Board, current_player: &Player) -> bool {
-    let fields = board.get_all_fields_by_player(current_player);
-    for field in fields {
-        for destination_coordinates in get_movements(&field, &board) {
-            let temp_board = move_piece(board.clone(), &field, &board.at(&destination_coordinates));
-            if !check_if_king_in_check(&temp_board, current_player) {
-                return false;
-            }
-        }
-    }
-    true
 }
