@@ -2,6 +2,7 @@ pub mod simple_min_max;
 
 use crate::{
     board::{
+        self,
         chesspiece::{get_movements, ChessPiece, ChessPieceType},
         field::Field,
         layout::Board,
@@ -9,14 +10,64 @@ use crate::{
     common::{check_checkmate, check_if_king_in_check, is_not_checked_after_move, move_piece},
     engine::Player,
 };
-
 use rand::Rng;
 use std::sync::mpsc;
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread::JoinHandle;
 
-pub trait AI {
-    //fn start(&self) -> JoinHandle<()>;
+use self::simple_min_max::MinMaxAI;
+
+pub trait AI: Send + Sync {
+    fn standby(&mut self);
     fn make_move(&mut self, board: Board) -> Board;
+}
+
+// pub struct AIWrapper<T: AI> {
+//     engine: Arc<(Mutex<T>, Condvar)>,
+// }
+
+// impl<T: AI> AIWrapper<T> {}
+
+pub fn start(engine_wrapper: Arc<(Mutex<MinMaxAI<DefaultAgent>>, Condvar)>) -> JoinHandle<()> {
+    std::thread::spawn(move || loop {
+        let engine = &mut engine_wrapper.0.lock().unwrap();
+        engine.standby();
+        engine_wrapper.1.wait(*engine);
+    })
+}
+
+pub fn make_move(engine_wrapper: Arc<(Mutex<impl AI>, Condvar)>, board: Board) -> Board {
+    let mut engine = engine_wrapper.0.lock().unwrap();
+    let new_board = engine.make_move(board);
+    engine_wrapper.1.notify_one();
+    new_board
+}
+
+pub fn new_wrapper_for_min_max(
+    scoring_agent: DefaultAgent,
+    board: Board,
+    first_move: bool,
+) -> Arc<(Mutex<simple_min_max::MinMaxAI<DefaultAgent>>, Condvar)> {
+    let min_max = if first_move {
+        simple_min_max::MinMaxAI {
+            current_state: board.clone(),
+            state_trees: vec![simple_min_max::Forest::new(simple_min_max::Node::new(
+                0,
+                Some(board),
+                0,
+            ))],
+            scoring_agent,
+            depth_level: 5,
+        }
+    } else {
+        simple_min_max::MinMaxAI {
+            current_state: board,
+            state_trees: vec![],
+            scoring_agent,
+            depth_level: 5,
+        }
+    };
+    Arc::new((Mutex::new(min_max), Condvar::new()))
 }
 
 pub fn generate_options_for_current_board(board: &Board, player_is_ai: bool) -> Vec<Board> {
@@ -49,15 +100,16 @@ pub fn generate_options_for_current_board(board: &Board, player_is_ai: bool) -> 
     return boards;
 }
 
-pub trait ScoringAgent: Send {
-    fn score(&self, board: &Board) -> u32;
+pub trait ScoringAgent: Send + Sync + Copy {
+    fn score(&self, board: &Board) -> i32;
 }
 
+#[derive(Copy, Clone)]
 pub struct DefaultAgent;
 
 impl ScoringAgent for DefaultAgent {
     // TEMPORARY, JUST FOR TESTS
-    fn score(&self, board: &Board) -> u32 {
+    fn score(&self, board: &Board) -> i32 {
         let mut ai_pieces = 0;
         let mut user_pieces = 0;
         for field in board.0 {

@@ -24,17 +24,18 @@ fn main() {
 
 fn game_engine() {
     let mut game_state = GameState::start();
-    let mut ai_engine = ai_engine::simple_min_max::MinMaxAI::new(
+    let ai_engine = ai_engine::new_wrapper_for_min_max(
         ai_engine::DefaultAgent,
         game_state.board.clone(),
-        true,
+        false,
     );
+    ai_engine::start(ai_engine.clone());
     loop {
         let _ = std::process::Command::new("clear").status();
         game_state.board.draw();
         println!("{}", mem::size_of::<Board>());
         io::stdout().flush().unwrap();
-        game_state = game_state.do_move(&mut ai_engine);
+        game_state = game_state.do_move(ai_engine.clone());
         game_state = game_state.switch_player();
         if game_state.checkmate {
             println!("Checkmate! {} won!", game_state.current_player);

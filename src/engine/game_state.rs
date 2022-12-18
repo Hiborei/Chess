@@ -1,3 +1,5 @@
+use std::sync::{Arc, Condvar, Mutex};
+
 use super::Player;
 use crate::{
     board::{
@@ -26,7 +28,7 @@ impl GameState {
         }
     }
 
-    pub fn do_move(self, ai_engine: &mut impl crate::ai_engine::AI) -> Self {
+    pub fn do_move(self, ai_engine: Arc<(Mutex<impl crate::ai_engine::AI>, Condvar)>) -> Self {
         match self.current_player {
             Player::User => do_user_move(self),
             Player::Opponent => do_ai_move(self, ai_engine),
@@ -58,7 +60,10 @@ fn do_user_move(mut game_state: GameState) -> GameState {
     game_state
 }
 
-fn do_ai_move(mut game_state: GameState, ai_engine: &mut impl crate::ai_engine::AI) -> GameState {
+fn do_ai_move(
+    mut game_state: GameState,
+    ai_engine: Arc<(Mutex<impl crate::ai_engine::AI>, Condvar)>,
+) -> GameState {
     let king_in_check = check_if_king_in_check(&game_state.board, &game_state.current_player);
 
     if king_in_check && check_checkmate(game_state.board.clone(), &game_state.current_player) {
@@ -66,7 +71,7 @@ fn do_ai_move(mut game_state: GameState, ai_engine: &mut impl crate::ai_engine::
         return game_state;
     }
 
-    game_state.board = ai_engine.make_move(game_state.board);
+    game_state.board = crate::ai_engine::make_move(ai_engine, game_state.board.clone());
     game_state
 }
 
