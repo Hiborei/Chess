@@ -6,7 +6,7 @@ use super::{
 };
 use crate::engine::Player;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChessPiece {
     pub piece_type: ChessPieceType,
     pub player: Player,
@@ -20,6 +20,20 @@ pub enum ChessPieceType {
     Rook,
     Queen,
     King,
+}
+
+impl ChessPieceType {
+    pub fn value(&self) -> i32 {
+        match self {
+            ChessPieceType::Pawn => 1,
+            ChessPieceType::Bishop => 3,
+            ChessPieceType::Knight => 3,
+            ChessPieceType::Rook => 5,
+            ChessPieceType::Queen => 9,
+            // King value doesn't matter
+            ChessPieceType::King => 0,
+        }
+    }
 }
 
 pub fn get_movements(field: &Field, board: &Board) -> Vec<BoardCoordinates> {

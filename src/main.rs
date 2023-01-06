@@ -11,7 +11,6 @@ use std::{
     mem,
 };
 
-use ai_engine::AI;
 //use ai_engine::FlatBoard;
 use engine::game_state::GameState;
 use interface::board_layout::DrawInTerminal;
@@ -29,7 +28,7 @@ fn game_engine() {
         game_state.board.clone(),
         false,
     );
-    ai_engine::start(ai_engine.clone());
+    let join_handle = ai_engine::start(ai_engine.clone());
     loop {
         let _ = std::process::Command::new("clear").status();
         game_state.board.draw();
@@ -42,6 +41,7 @@ fn game_engine() {
             break;
         }
     }
+    join_handle.join().expect("Couldn't join AI engine");
     let mut line = String::new();
     std::io::stdin().read_line(&mut line).unwrap();
 }

@@ -3,15 +3,13 @@ use std::sync::{Arc, Condvar, Mutex};
 use super::Player;
 use crate::{
     board::{
-        chesspiece::{get_movements, ChessPieceType},
+        chesspiece::get_movements,
         field::Field,
         layout::{Board, BoardCoordinates},
     },
     common::{check_checkmate, check_if_king_in_check, is_not_checked_after_move, move_piece},
     interface::{get_input, CommandInput, GeneralInput},
 };
-
-use rand::Rng;
 
 pub struct GameState {
     pub current_player: Player,
@@ -128,7 +126,7 @@ fn choose_fields(game_state: &GameState) -> (Field, Field) {
         }
     }
 }
-
+/*
 fn do_computer_move(mut game_state: GameState) -> GameState {
     let king_in_check = check_if_king_in_check(&game_state.board, &game_state.current_player);
 
@@ -162,3 +160,4 @@ fn do_computer_move(mut game_state: GameState) -> GameState {
 
     game_state
 }
+*/

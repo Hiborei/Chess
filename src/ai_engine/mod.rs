@@ -1,18 +1,11 @@
 pub mod simple_min_max;
 
 use crate::{
-    board::{
-        self,
-        chesspiece::{get_movements, ChessPiece, ChessPieceType},
-        field::Field,
-        layout::Board,
-    },
-    common::{check_checkmate, check_if_king_in_check, is_not_checked_after_move, move_piece},
+    board::{chesspiece::get_movements, layout::Board},
+    common::{check_checkmate, check_if_king_in_check, move_piece},
     engine::Player,
 };
-use rand::Rng;
-use std::sync::mpsc;
-use std::sync::{Arc, Condvar, Mutex, MutexGuard};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 
 use self::simple_min_max::MinMaxAI;
@@ -30,9 +23,9 @@ pub trait AI: Send + Sync {
 
 pub fn start(engine_wrapper: Arc<(Mutex<MinMaxAI<DefaultAgent>>, Condvar)>) -> JoinHandle<()> {
     std::thread::spawn(move || loop {
-        let engine = &mut engine_wrapper.0.lock().unwrap();
+        let mut engine = engine_wrapper.0.lock().unwrap();
         engine.standby();
-        engine_wrapper.1.wait(*engine);
+        engine_wrapper.1.wait(engine).unwrap();
     })
 }
 
@@ -51,11 +44,7 @@ pub fn new_wrapper_for_min_max(
     let min_max = if first_move {
         simple_min_max::MinMaxAI {
             current_state: board.clone(),
-            state_trees: vec![simple_min_max::Forest::new(simple_min_max::Node::new(
-                0,
-                Some(board),
-                0,
-            ))],
+            state_trees: vec![(board.clone(), board)],
             scoring_agent,
             depth_level: 5,
         }
@@ -77,7 +66,7 @@ pub fn generate_options_for_current_board(board: &Board, player_is_ai: bool) -> 
         Player::User
     };
     let mut boards = vec![];
-    let king_in_check = check_if_king_in_check(&board, &player);
+    let king_in_check = check_if_king_in_check(board, &player);
 
     if king_in_check && check_checkmate(board.clone(), &player) {
         // There's nothing more to do, it's checkmate
@@ -87,7 +76,7 @@ pub fn generate_options_for_current_board(board: &Board, player_is_ai: bool) -> 
     let possible_fields = board.get_all_fields_by_player(&player);
 
     for selected_field in possible_fields {
-        let possible_destinations = get_movements(&selected_field, &board);
+        let possible_destinations = get_movements(&selected_field, board);
         for selected_destination in possible_destinations {
             let destination_field = board.at(&selected_destination);
             let new_board = move_piece(board.clone(), &selected_field, &destination_field);
@@ -97,7 +86,7 @@ pub fn generate_options_for_current_board(board: &Board, player_is_ai: bool) -> 
             }
         }
     }
-    return boards;
+    boards
 }
 
 pub trait ScoringAgent: Send + Sync + Copy {
@@ -115,13 +104,13 @@ impl ScoringAgent for DefaultAgent {
         for field in board.0 {
             if let Some(piece) = field.piece {
                 if piece.player == Player::User {
-                    user_pieces += 1;
+                    user_pieces += piece.piece_type.value();
                 } else {
-                    ai_pieces += 1;
+                    ai_pieces += piece.piece_type.value();
                 }
             }
         }
-        return ai_pieces - user_pieces;
+        ai_pieces - user_pieces
     }
 }
 
