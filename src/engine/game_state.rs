@@ -20,7 +20,7 @@ pub struct GameState {
 impl GameState {
     pub fn start() -> Self {
         GameState {
-            current_player: Player::User,
+            current_player: Player::Opponent,
             board: Board::default().fill_standard_pieces(),
             checkmate: false,
         }

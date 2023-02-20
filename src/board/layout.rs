@@ -170,11 +170,6 @@ impl Board {
         coordinates: BoardCoordinates,
         mut piece: super::chesspiece::ChessPiece,
     ) -> Board {
-        if piece.can_change(coordinates) {
-            let piece_type: ChessPieceType =
-                interface::get_input("Choose a piece to replace the pawn: ");
-            piece.piece_type = piece_type
-        }
         self.at_mut(&coordinates).add_replace_piece(piece);
         self
     }

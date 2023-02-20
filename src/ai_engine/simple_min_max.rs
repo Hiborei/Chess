@@ -1,3 +1,7 @@
+//! Minmax algorithm with alpha-beta pruning.
+//! When idle, it will generate all movement possibilities recurrently.
+//! After reaching the selected depth it will return the final board value.
+
 use super::{ScoringAgent, AI};
 use crate::board::layout::Board;
 use rayon::prelude::*;
@@ -10,93 +14,6 @@ pub struct MinMaxAI<T: ScoringAgent + 'static> {
     pub(crate) depth_level: u32,
 }
 
-/*
-struct LockableStateForests(Arc<(Mutex<Vec<Forest>>, Condvar)>);
-
-impl LockableStateForests {
-    fn lock(&self) -> LockedStateForests<'_> {
-        LockedStateForests(self.0 .0.lock().unwrap())
-    }
-}
-
-struct LockedStateForests<'a>(MutexGuard<'a, Vec<Forest>>);
-
-impl<'a> LockedStateForests<'a> {
-    fn iter_mut(&mut self) -> impl Iterator<Item = &mut Forest> {
-        self.0.iter_mut()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct Node {
-    id: usize,
-    parent: Option<usize>,
-    children: Vec<usize>,
-    data: Option<Board>,
-    score: i32,
-}
-
-impl Node {
-    pub(crate) fn new(id: usize, data: Option<Board>, score: i32) -> Self {
-        Self {
-            id,
-            parent: None,
-            children: vec![],
-            data,
-            score,
-        }
-    }
-
-    fn new_child(id: usize, parent_id: usize, data: Option<Board>, score: i32) -> Self {
-        Self {
-            id,
-            parent: Some(parent_id),
-            children: vec![],
-            data,
-            score,
-        }
-    }
-
-    fn compare(&self, data: &Board) -> bool {
-        if let Some(board) = &self.data {
-            return board == data;
-        }
-        false
-    }
-
-    fn get_data(&self) -> Option<Board> {
-        self.data.clone()
-    }
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct Forest(Vec<Node>);
-
-impl Forest {
-    pub(crate) fn new(root_node: Node) -> Self {
-        Self(vec![root_node])
-    }
-
-    fn find_child(&self, parent_id: usize, data: Board) -> Option<Node> {
-        for node in self.0.iter() {
-            if Some(parent_id) == node.parent {
-                if node.compare(&data) {
-                    return Some(node.clone());
-                }
-            }
-        }
-        return None;
-    }
-
-    fn new_child(&mut self, parent_id: usize, data: Option<Board>, score: i32) -> usize {
-        let child = Node::new_child(self.0.len(), parent_id, data, score);
-        let id = child.id;
-        self.0[parent_id].children.push(id);
-        self.0.push(child);
-        return id;
-    }
-}
-*/
 fn calculate_first_layers(
     board: Board,
     scoring_agent: impl ScoringAgent,
@@ -104,7 +21,7 @@ fn calculate_first_layers(
 ) -> Board {
     let boards = super::generate_options_for_current_board(&board, true);
     if boards.is_empty() {
-        println!("Boards in creating first level are empty?");
+        //println!("Boards in creating first level are empty?");
         return board;
     }
     let final_result = boards
@@ -115,8 +32,8 @@ fn calculate_first_layers(
             let mut best_value = i32::MIN;
             let boards = super::generate_options_for_current_board(&board, false);
             if boards.is_empty() {
-                println!("User has no moves, I guess that's good?");
-                return (i32::MAX, board);
+                //println!("User has no moves, I guess that's good?");
+                return (i32::MAX - 1, board);
             }
             for board in boards {
                 let value =
@@ -139,26 +56,6 @@ fn calculate_first_layers(
                 }
             },
         );
-    /*for board in boards {
-        let mut best_value = i32::MIN;
-        let boards = super::generate_options_for_current_board(&board, false);
-        if boards.is_empty() {
-            println!("User has no moves, I guess that's good?");
-            return board;
-        }
-        for board in boards {
-            let value = calculate_deeper_layers(board, true, 3, scoring_agent, depth_level, alfa, beta);
-            best_value = cmp::max(best_value, value);
-            alfa = cmp::max(best_value, alfa);
-            if beta <= alfa {
-                break;
-            }
-        }
-        if best_value > overall_best_value {
-            best_board = board;
-            overall_best_value = best_value;
-        }
-    }*/
     final_result.1
 }
 
@@ -179,7 +76,7 @@ fn calculate_deeper_layers(
         let mut best_value = i32::MIN;
         let boards = super::generate_options_for_current_board(&board, current_player_is_ai);
         if boards.is_empty() {
-            return best_value;
+            return best_value + 1;
         }
         for board in boards {
             let value = calculate_deeper_layers(
@@ -202,7 +99,7 @@ fn calculate_deeper_layers(
         let mut best_value = i32::MAX;
         let boards = super::generate_options_for_current_board(&board, current_player_is_ai);
         if boards.is_empty() {
-            return best_value;
+            return best_value - 1;
         }
         for board in boards {
             let value = calculate_deeper_layers(
@@ -223,115 +120,7 @@ fn calculate_deeper_layers(
         best_value
     }
 }
-/*
-fn level(
-    forest: &mut Forest,
-    board: Board,
-    parent_id: usize,
-    current_player_is_ai: bool,
-    current_depth: u32,
-    scoring_agent: impl ScoringAgent,
-    depth_level: u32,
-    test_first_try: bool,
-) {
-    if test_first_try {
-        let mut now = Instant::now();
 
-        let boards = super::generate_options_for_current_board(&board, current_player_is_ai);
-        println!("Generate options took {} us", now.elapsed().as_micros());
-        now = Instant::now();
-        match current_depth {
-            1 => {
-                for board in boards {
-                    now = Instant::now();
-                    let score = scoring_agent.score(&board);
-
-                    println!("Score took {} us", now.elapsed().as_micros());
-                    now = Instant::now();
-                    forest.new_child(parent_id, Some(board.clone()), score);
-                    println!("Creating new child took {} us", now.elapsed().as_micros());
-                    now = Instant::now();
-                    level(
-                        forest,
-                        board,
-                        parent_id,
-                        !current_player_is_ai,
-                        current_depth + 1,
-                        scoring_agent,
-                        depth_level,
-                        false,
-                    );
-
-                    println!("Doing next level took {} us", now.elapsed().as_micros());
-                }
-            }
-            depth if depth < depth_level => {
-                for board in boards {
-                    let score = scoring_agent.score(&board);
-                    forest.new_child(parent_id, None, score);
-                    level(
-                        forest,
-                        board,
-                        parent_id,
-                        !current_player_is_ai,
-                        depth + 1,
-                        scoring_agent,
-                        depth_level,
-                        false,
-                    );
-                }
-            }
-            _ => {
-                for board in boards {
-                    let score = scoring_agent.score(&board);
-                    forest.new_child(parent_id, None, score);
-                }
-            }
-        }
-    } else {
-        let boards = super::generate_options_for_current_board(&board, current_player_is_ai);
-        match current_depth {
-            1 => {
-                for board in boards {
-                    forest.new_child(parent_id, Some(board.clone()), score);
-                    level(
-                        forest,
-                        board,
-                        parent_id,
-                        !current_player_is_ai,
-                        current_depth + 1,
-                        scoring_agent,
-                        depth_level,
-                        false,
-                    );
-                }
-            }
-            depth if depth < depth_level => {
-                for board in boards {
-                    let score = scoring_agent.score(&board);
-                    forest.new_child(parent_id, None, score);
-                    level(
-                        forest,
-                        board,
-                        parent_id,
-                        !current_player_is_ai,
-                        depth + 1,
-                        scoring_agent,
-                        depth_level,
-                        false,
-                    );
-                }
-            }
-            _ => {
-                for board in boards {
-                    let score = scoring_agent.score(&board);
-                    forest.new_child(parent_id, None, score);
-                }
-            }
-        }
-    }
-}
-*/
 impl<T: ScoringAgent> MinMaxAI<T> {
     fn grow_forests(&mut self) {
         let current_player_is_ai = false;
@@ -352,6 +141,7 @@ impl<T: ScoringAgent> MinMaxAI<T> {
                 self.scoring_agent,
                 self.depth_level,
             );
+            self.state_trees.clear();
             self.state_trees
                 .push((self.current_state.clone(), result_board))
         }
@@ -379,9 +169,3 @@ where
         self.grow_forests();
     }
 }
-
-// General idea:
-// - have an engine which works on separate thread
-// - on every new game state (after user chooses a move), lock mutex, update board, notify thread to wake up
-// - when thread wakes up, it locks the mutex and calculates X next possible states, when finished -> wait for wakeup
-// Is this possible to do with these since Min max should theoretically cut off some branches? (Research whether the cut off ones are possible at all)

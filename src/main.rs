@@ -12,7 +12,7 @@ use std::{
 };
 
 //use ai_engine::FlatBoard;
-use engine::game_state::GameState;
+use engine::{game_state::GameState, Player};
 use interface::board_layout::DrawInTerminal;
 
 use crate::board::layout::Board;
@@ -26,13 +26,12 @@ fn game_engine() {
     let ai_engine = ai_engine::new_wrapper_for_min_max(
         ai_engine::DefaultAgent,
         game_state.board.clone(),
-        false,
+        game_state.current_player == Player::Opponent,
     );
     let join_handle = ai_engine::start(ai_engine.clone());
     loop {
         let _ = std::process::Command::new("clear").status();
         game_state.board.draw();
-        println!("{}", mem::size_of::<Board>());
         io::stdout().flush().unwrap();
         game_state = game_state.do_move(ai_engine.clone());
         game_state = game_state.switch_player();
